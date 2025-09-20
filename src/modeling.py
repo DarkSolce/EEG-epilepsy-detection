@@ -15,6 +15,8 @@ import pandas as pd
 from typing import Dict, List, Tuple, Any, Optional
 import joblib
 import json
+import os
+import time
 from collections import Counter
 import logging
 
@@ -24,7 +26,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.model_selection import (
     StratifiedKFold, GridSearchCV, RandomizedSearchCV, 
-    cross_val_score, cross_validate
+    cross_val_score, cross_validate, train_test_split
 )
 from sklearn.metrics import (
     classification_report, confusion_matrix, roc_auc_score, roc_curve,
@@ -54,321 +56,84 @@ logger = logging.getLogger(__name__)
 
 class EEGModelConfig:
     """
-    Configuration des modèles pour la détection d'épilepsie
+    Configuration des modèles pour la détection d'épilepsie - VERSION OPTIMISÉE
     """
     
-    # 🚀 FIX IMMÉDIAT POUR ACCÉLÉRER VOTRE PIPELINE
-# ===============================================
-
-# =============================================================================
-# SOLUTION 1: REMPLACER get_model_configs() PAR VERSION ULTRA-RAPIDE
-# =============================================================================
-
-# Dans votre src/modeling.py, remplacez temporairement get_model_configs() par:
-
-@staticmethod
-def get_model_configs() -> Dict[str, Dict]:
-    """
-    Version ULTRA-RAPIDE pour gros datasets
-    """
-    return {
-        'Random Forest': {
-            'model': RandomForestClassifier(random_state=42, n_jobs=-1),
-            'param_grid': {  # REMPLACE param_grid par param_grid_quick
-                'n_estimators': [50, 100],           # 2 valeurs au lieu de 3
-                'max_depth': [10],                   # 1 valeur au lieu de 4
-                'min_samples_split': [5],            # 1 valeur au lieu de 3
-                'max_features': ['sqrt'],            # 1 valeur au lieu de 3
-                'class_weight': ['balanced']         # 1 valeur au lieu de 3
+    @staticmethod
+    def get_model_configs() -> Dict[str, Dict]:
+        """
+        Configurations ULTRA-RAPIDES pour gros datasets
+        """
+        return {
+            'Random Forest': {
+                'model': RandomForestClassifier(random_state=42, n_jobs=-1),
+                'param_grid': {
+                    'n_estimators': [50, 100],           # RÉDUIT: 2 au lieu de 3
+                    'max_depth': [15],                   # RÉDUIT: 1 au lieu de 4
+                    'min_samples_split': [5],            # RÉDUIT: 1 au lieu de 3
+                    'max_features': ['sqrt'],            # RÉDUIT: 1 au lieu de 3
+                    'class_weight': ['balanced']         # RÉDUIT: 1 au lieu de 3
+                },
+                'param_grid_quick': {
+                    'n_estimators': [50],
+                    'max_depth': [10],
+                    'max_features': ['sqrt'],
+                    'class_weight': ['balanced']
+                },
+                'interpretable': True,
+                'handles_imbalance': True
             },
-            'param_grid_quick': {
-                'n_estimators': [50],
-                'max_depth': [10],
-                'max_features': ['sqrt']
-            },
-            'interpretable': True,
-            'handles_imbalance': True
-        },
-        
-        'Logistic Regression': {
-            'model': LogisticRegression(random_state=42, max_iter=1000),
-            'param_grid': {  # ULTRA-RAPIDE
-                'C': [1.0],                          # 1 valeur au lieu de 6
-                'penalty': ['l2'],                   # 1 valeur au lieu de 3
-                'class_weight': ['balanced']         # 1 valeur fixe
-            },
-            'param_grid_quick': {
-                'C': [1.0],
-                'penalty': ['l2']
-            },
-            'interpretable': True,
-            'handles_imbalance': True
-        },
-        
-        'Gradient Boosting': {
-            'model': GradientBoostingClassifier(random_state=42),
-            'param_grid': {  # ULTRA-RAPIDE
-                'n_estimators': [50],                # 1 valeur au lieu de 3
-                'learning_rate': [0.1],              # 1 valeur au lieu de 4
-                'max_depth': [3]                     # 1 valeur au lieu de 3
-            },
-            'param_grid_quick': {
-                'n_estimators': [50],
-                'learning_rate': [0.1],
-                'max_depth': [3]
-            },
-            'interpretable': True,
-            'handles_imbalance': False
-        }
-    }
-
-# =============================================================================
-# SOLUTION 2: CRÉER config_ultra_fast.json
-# =============================================================================
-
-import json
-
-ultra_fast_config = {
-    "data": {
-        "raw_data_path": "data/raw/EEG_Scaled_data.csv",
-        "processed_data_dir": "data/processed_fast",
-        "target_column": None
-    },
-    "preprocessing": {
-        "test_size": 0.2,
-        "random_state": 42,
-        "handle_missing": "median",
-        "remove_constant_features": True,
-        "standardize": True
-    },
-    "feature_engineering": {
-        "selection_method": "importance",     # AU LIEU DE "combined"
-        "max_features": 300,                  # AU LIEU DE 2000
-        "apply_pca": False,
-        "pca_variance_threshold": 0.95
-    },
-    "modeling": {
-        "models": ["Random Forest"],          # UN SEUL MODÈLE
-        "handle_imbalance": True,
-        "cv_folds": 2,                        # AU LIEU DE 5
-        "scoring_metric": "f1",
-        "quick_training": True                # FORCE param_grid_quick
-    },
-    "output": {
-        "models_dir": "models_fast",
-        "results_dir": "results_fast",
-        "save_artifacts": True
-    }
-}
-
-# Sauvegarder
-with open('config_ultra_fast.json', 'w') as f:
-    json.dump(ultra_fast_config, f, indent=2)
-
-print("✅ config_ultra_fast.json créé")
-
-# =============================================================================
-# SOLUTION 3: ÉCHANTILLON STRATIFIÉ INTELLIGENT
-# =============================================================================
-
-def create_smart_sample(input_path, output_path, n_samples=5000):
-    """Créer un échantillon stratifié intelligent"""
-    import pandas as pd
-    from sklearn.model_selection import train_test_split
-    
-    print(f"📊 Création d'un échantillon stratifié de {n_samples:,} lignes...")
-    
-    # Lire les premières lignes pour identifier la target
-    preview = pd.read_csv(input_path, nrows=1000)
-    print(f"   Colonnes: {len(preview.columns)}")
-    
-    # Supposer que la target est la dernière colonne
-    target_col = preview.columns[-1]
-    print(f"   Colonne cible supposée: {target_col}")
-    
-    # Lire un échantillon plus large pour stratification
-    print("   Lecture d'un échantillon pour stratification...")
-    large_sample = pd.read_csv(input_path, nrows=20000)
-    
-    # Créer échantillon stratifié
-    if n_samples < len(large_sample):
-        X = large_sample.drop(columns=[target_col])
-        y = large_sample[target_col]
-        
-        _, X_sample, _, y_sample = train_test_split(
-            X, y, 
-            test_size=n_samples/len(large_sample), 
-            stratify=y, 
-            random_state=42
-        )
-        
-        # Recombiner
-        sample_df = pd.concat([X_sample, y_sample], axis=1)
-    else:
-        sample_df = large_sample.head(n_samples)
-    
-    # Sauvegarder
-    sample_df.to_csv(output_path, index=False)
-    
-    # Statistiques
-    print(f"✅ Échantillon créé: {output_path}")
-    print(f"   Shape: {sample_df.shape}")
-    print(f"   Distribution target: {sample_df[target_col].value_counts().to_dict()}")
-    print(f"   Taille fichier: {os.path.getsize(output_path)/(1024*1024):.1f} MB")
-    
-    return output_path
-
-# =============================================================================
-# SOLUTION 4: SCRIPT DE TEST RAPIDE
-# =============================================================================
-
-def test_pipeline_fast():
-    """Test ultra-rapide du pipeline complet"""
-    import os
-    
-    print("🚀 TEST ULTRA-RAPIDE DU PIPELINE")
-    print("=" * 50)
-    
-    # 1. Créer échantillon si pas encore fait
-    original_file = "data/raw/EEG_Scaled_data.csv"
-    sample_file = "data/raw/sample_3k.csv"
-    
-    if not os.path.exists(sample_file):
-        print("📊 Création de l'échantillon de test...")
-        create_smart_sample(original_file, sample_file, n_samples=3000)
-    
-    # 2. Configuration ultra-rapide
-    test_config = {
-        "data": {"raw_data_path": sample_file, "processed_data_dir": "data/test_processed"},
-        "feature_engineering": {"selection_method": "importance", "max_features": 100},
-        "modeling": {"models": ["Random Forest"], "quick_training": True, "cv_folds": 2}
-    }
-    
-    # 3. Lancer le pipeline
-    try:
-        print("🔄 Lancement du pipeline de test...")
-        from src import create_complete_pipeline
-        
-        start_time = time.time()
-        results = create_complete_pipeline(sample_file, test_config)
-        end_time = time.time()
-        
-        print(f"\n✅ TEST TERMINÉ EN {end_time-start_time:.1f} SECONDES !")
-        print("=" * 50)
-        
-        if results and 'final_performance' in results:
-            best_model = results['final_performance']['best_model']
-            metrics = results['final_performance']['best_metrics']
             
-            print(f"🏆 Modèle: {best_model}")
-            print(f"📊 F1-Score: {metrics['f1_score']:.4f}")
-            print(f"📊 Accuracy: {metrics['accuracy']:.4f}")
-            print(f"📊 Precision: {metrics['precision']:.4f}")
-            print(f"📊 Recall: {metrics['recall']:.4f}")
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ Erreur: {e}")
-        return False
-
-# =============================================================================
-# SOLUTION 5: MODIFICATION DIRECTE DU CODE
-# =============================================================================
-
-# Si vous voulez modifier directement le code au lieu du fichier config,
-# dans src/modeling.py, ligne ~520 dans train_models(), ajoutez:
-
-def train_models_ultra_fast(self, X_train, y_train):
-    """Version ultra-rapide avec paramètres fixes"""
-    
-    # Configuration fixe ultra-rapide
-    fast_models = {
-        'Random Forest': RandomForestClassifier(
-            n_estimators=100,
-            max_depth=15,
-            min_samples_split=5,
-            max_features='sqrt',
-            class_weight='balanced',
-            random_state=42,
-            n_jobs=-1
-        )
-    }
-    
-    print("🚀 ENTRAÎNEMENT ULTRA-RAPIDE (paramètres fixes)")
-    
-    # Gestion déséquilibre
-    if self.handle_imbalance:
-        X_train_balanced, y_train_balanced = self.imbalance_handler.apply_combined_sampling(X_train, y_train)
-    else:
-        X_train_balanced, y_train_balanced = X_train, y_train
-    
-    training_results = {}
-    
-    for model_name, model in fast_models.items():
-        print(f"⚡ Entraînement rapide: {model_name}")
-        
-        # Entraînement direct sans GridSearch
-        model.fit(X_train_balanced, y_train_balanced)
-        
-        # Validation croisée simple
-        from sklearn.model_selection import cross_val_score
-        cv_scores = cross_val_score(model, X_train_balanced, y_train_balanced, 
-                                   cv=2, scoring='f1', n_jobs=-1)
-        
-        self.trained_models[model_name] = model
-        training_results[model_name] = {
-            'cv_score': cv_scores.mean(),
-            'cv_std': cv_scores.std()
+            'Logistic Regression': {
+                'model': LogisticRegression(random_state=42, max_iter=1000),
+                'param_grid': {
+                    'C': [1.0],                          # RÉDUIT: 1 au lieu de 6
+                    'penalty': ['l2'],                   # RÉDUIT: 1 au lieu de 3
+                    'class_weight': ['balanced']         # Fixé
+                },
+                'param_grid_quick': {
+                    'C': [1.0],
+                    'penalty': ['l2'],
+                    'class_weight': ['balanced']
+                },
+                'interpretable': True,
+                'handles_imbalance': True
+            },
+            
+            'Gradient Boosting': {
+                'model': GradientBoostingClassifier(random_state=42),
+                'param_grid': {
+                    'n_estimators': [50],                # RÉDUIT: 1 au lieu de 3
+                    'learning_rate': [0.1],              # RÉDUIT: 1 au lieu de 4
+                    'max_depth': [3]                     # RÉDUIT: 1 au lieu de 3
+                },
+                'param_grid_quick': {
+                    'n_estimators': [50],
+                    'learning_rate': [0.1],
+                    'max_depth': [3]
+                },
+                'interpretable': True,
+                'handles_imbalance': False
+            },
+            
+            'Support Vector Machine': {
+                'model': SVC(random_state=42, probability=True),
+                'param_grid': {
+                    'C': [1],                            # RÉDUIT: 1 au lieu de 4
+                    'gamma': ['scale'],                  # RÉDUIT: 1 au lieu de 5
+                    'kernel': ['rbf'],                   # RÉDUIT: 1 au lieu de 3
+                    'class_weight': ['balanced']
+                },
+                'param_grid_quick': {
+                    'C': [1],
+                    'gamma': ['scale'],
+                    'kernel': ['rbf'],
+                    'class_weight': ['balanced']
+                },
+                'interpretable': False,
+                'handles_imbalance': True
+            }
         }
-        
-        print(f"✅ {model_name}: F1-Score CV = {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
-    
-    return training_results
-
-# =============================================================================
-# COMMANDES À EXÉCUTER MAINTENANT
-# =============================================================================
-
-print("""
-🚀 COMMANDES IMMÉDIATES À EXÉCUTER:
-
-1️⃣ CRÉER ÉCHANTILLON DE TEST (2 minutes):
-python -c "
-import pandas as pd
-import os
-df = pd.read_csv('data/raw/EEG_Scaled_data.csv', nrows=3000)
-os.makedirs('data/raw', exist_ok=True)
-df.to_csv('data/raw/sample_3k.csv', index=False)
-print(f'✅ Échantillon créé: {df.shape}')
-print(f'Distribution: {df.iloc[:, -1].value_counts().to_dict()}')
-"
-
-2️⃣ TEST ULTRA-RAPIDE (5 minutes max):
-python main.py --data data/raw/sample_3k.csv --quick
-
-3️⃣ SI ÇA MARCHE, DATASET COMPLET AVEC CONFIG RAPIDE:
-python main.py --config config_ultra_fast.json
-
-4️⃣ TEMPS ESTIMÉS:
-   - Échantillon 3k: 3-5 minutes
-   - Dataset complet optimisé: 30-45 minutes
-   - Dataset complet original: 2-3 heures
-
-⚠️  IMPORTANT: 
-   Le mode --quick devrait automatiquement utiliser param_grid_quick
-   Si ça ne marche pas, modifiez temporairement param_grid dans get_model_configs()
-""")
-
-import time
-import os
-
-# Créer immédiatement la config ultra-rapide
-if __name__ == "__main__":
-    # Créer le fichier de config
-    with open('config_ultra_fast.json', 'w') as f:
-        json.dump(ultra_fast_config, f, indent=2)
-    print("✅ config_ultra_fast.json créé et prêt à utiliser")
 
 
 class ImbalanceHandler:
@@ -609,21 +374,6 @@ class ThresholdOptimizer:
                           metric: str = 'f1', thresholds: np.ndarray = None) -> Dict[str, float]:
         """
         Optimiser le seuil de classification
-        
-        Parameters:
-        -----------
-        y_true : array
-            Vraies étiquettes
-        y_pred_proba : array
-            Probabilités prédites
-        metric : str
-            Métrique à optimiser ('f1', 'precision', 'recall', 'accuracy')
-        thresholds : array
-            Seuils à tester (par défaut: np.arange(0.1, 0.9, 0.01))
-            
-        Returns:
-        --------
-        dict: Informations sur le seuil optimal
         """
         if thresholds is None:
             thresholds = np.arange(0.1, 0.9, 0.01)
@@ -709,9 +459,10 @@ class EEGModelTrainer:
         for name in model_names:
             if name in model_configs:
                 config = model_configs[name].copy()
-                # Utiliser param_grid_quick si demandé
+                # FORCE l'utilisation de param_grid_quick si demandé
                 if quick_search and 'param_grid_quick' in config:
                     config['param_grid'] = config['param_grid_quick']
+                    logger.info(f"Mode rapide activé pour {name}")
                 
                 self.models[name] = config
                 logger.info(f"Modèle configuré: {name}")
@@ -719,12 +470,12 @@ class EEGModelTrainer:
         logger.info(f"Total modèles configurés: {len(self.models)}")
     
     def train_models(self, X_train: np.ndarray, y_train: np.ndarray,
-                    cv_folds: int = 5, scoring: str = 'f1',
+                    cv_folds: int = 3, scoring: str = 'f1',  # RÉDUIT CV de 5 à 3
                     n_jobs: int = -1, verbose: bool = True) -> Dict[str, Any]:
         """
-        Entraîner tous les modèles configurés avec optimisation d'hyperparamètres
+        Entraîner tous les modèles configurés avec optimisation d'hyperparamètres RAPIDE
         """
-        logger.info("🚀 DÉBUT DE L'ENTRAÎNEMENT DES MODÈLES")
+        logger.info("🚀 DÉBUT DE L'ENTRAÎNEMENT DES MODÈLES (MODE OPTIMISÉ)")
         logger.info(f"Dataset: {X_train.shape[0]} échantillons, {X_train.shape[1]} features")
         logger.info(f"Distribution: {Counter(y_train)}")
         
@@ -735,7 +486,7 @@ class EEGModelTrainer:
         else:
             X_train_balanced, y_train_balanced = X_train, y_train
         
-        # Configuration de la validation croisée
+        # Configuration de la validation croisée RÉDUITE
         cv = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=42)
         
         training_results = {}
@@ -743,11 +494,20 @@ class EEGModelTrainer:
         for model_name, model_config in self.models.items():
             logger.info(f"\n🔄 Entraînement: {model_name}")
             
+            # Affichage du nombre de combinaisons
+            param_grid = model_config['param_grid']
+            n_combinations = np.prod([len(v) if isinstance(v, list) else 1 for v in param_grid.values()])
+            total_fits = n_combinations * cv_folds
+            logger.info(f"   Combinaisons à tester: {n_combinations}")
+            logger.info(f"   Total entraînements: {total_fits}")
+            
             try:
+                start_time = time.time()
+                
                 # Optimisation des hyperparamètres
                 grid_search = GridSearchCV(
                     estimator=model_config['model'],
-                    param_grid=model_config['param_grid'],
+                    param_grid=param_grid,
                     cv=cv,
                     scoring=scoring,
                     n_jobs=n_jobs,
@@ -757,6 +517,9 @@ class EEGModelTrainer:
                 # Entraînement
                 grid_search.fit(X_train_balanced, y_train_balanced)
                 
+                end_time = time.time()
+                training_time = end_time - start_time
+                
                 # Sauvegarder le meilleur modèle
                 best_model = grid_search.best_estimator_
                 self.trained_models[model_name] = best_model
@@ -765,6 +528,7 @@ class EEGModelTrainer:
                 optimization_result = {
                     'best_params': grid_search.best_params_,
                     'best_cv_score': grid_search.best_score_,
+                    'training_time': training_time,
                     'cv_results': {
                         'mean_test_scores': grid_search.cv_results_['mean_test_score'].tolist(),
                         'std_test_scores': grid_search.cv_results_['std_test_score'].tolist()
@@ -775,6 +539,7 @@ class EEGModelTrainer:
                 training_results[model_name] = optimization_result
                 
                 logger.info(f"✅ {model_name} - Meilleur score CV: {grid_search.best_score_:.4f}")
+                logger.info(f"   Temps d'entraînement: {training_time:.1f}s")
                 logger.info(f"   Meilleurs paramètres: {grid_search.best_params_}")
                 
             except Exception as e:
@@ -909,7 +674,6 @@ class EEGModelTrainer:
         """
         Sauvegarder tous les modèles et résultats
         """
-        import os
         os.makedirs(output_dir, exist_ok=True)
         
         # Sauvegarder les modèles
@@ -981,10 +745,12 @@ def create_complete_modeling_pipeline(X_train: np.ndarray, y_train: np.ndarray,
     if model_names is None:
         model_names = ['Random Forest', 'Logistic Regression', 'Gradient Boosting']
     
+    # FORCER le mode quick_search si quick_training est True
     trainer.setup_models(model_names, quick_search=quick_training)
     
-    # Entraînement
-    training_results = trainer.train_models(X_train, y_train, cv_folds=5)
+    # Entraînement avec CV réduite
+    cv_folds = 2 if quick_training else 3  # Encore plus rapide
+    training_results = trainer.train_models(X_train, y_train, cv_folds=cv_folds)
     
     # Évaluation
     evaluation_results = trainer.evaluate_models(X_test, y_test)
@@ -1021,9 +787,144 @@ def create_complete_modeling_pipeline(X_train: np.ndarray, y_train: np.ndarray,
     return pipeline_results
 
 
+# Utilitaires pour échantillonnage rapide
+def create_smart_sample(input_path: str, output_path: str, n_samples: int = 5000):
+    """Créer un échantillon stratifié intelligent"""
+    logger.info(f"📊 Création d'un échantillon stratifié de {n_samples:,} lignes...")
+    
+    # Lire les premières lignes pour identifier la target
+    preview = pd.read_csv(input_path, nrows=1000)
+    logger.info(f"   Colonnes: {len(preview.columns)}")
+    
+    # Supposer que la target est la dernière colonne
+    target_col = preview.columns[-1]
+    logger.info(f"   Colonne cible supposée: {target_col}")
+    
+    # Lire un échantillon plus large pour stratification
+    logger.info("   Lecture d'un échantillon pour stratification...")
+    large_sample = pd.read_csv(input_path, nrows=min(20000, n_samples*4))
+    
+    # Créer échantillon stratifié
+    if n_samples < len(large_sample):
+        X = large_sample.drop(columns=[target_col])
+        y = large_sample[target_col]
+        
+        _, X_sample, _, y_sample = train_test_split(
+            X, y, 
+            test_size=n_samples/len(large_sample), 
+            stratify=y, 
+            random_state=42
+        )
+        
+        # Recombiner
+        sample_df = pd.concat([X_sample, y_sample], axis=1)
+    else:
+        sample_df = large_sample.head(n_samples)
+    
+    # Sauvegarder
+    sample_df.to_csv(output_path, index=False)
+    
+    # Statistiques
+    logger.info(f"✅ Échantillon créé: {output_path}")
+    logger.info(f"   Shape: {sample_df.shape}")
+    logger.info(f"   Distribution target: {sample_df[target_col].value_counts().to_dict()}")
+    logger.info(f"   Taille fichier: {os.path.getsize(output_path)/(1024*1024):.1f} MB")
+    
+    return output_path
+
+
+def test_pipeline_fast():
+    """Test ultra-rapide du pipeline complet"""
+    logger.info("🚀 TEST ULTRA-RAPIDE DU PIPELINE")
+    logger.info("=" * 50)
+    
+    # 1. Créer échantillon si pas encore fait
+    original_file = "data/raw/EEG_Scaled_data.csv"
+    sample_file = "data/raw/sample_3k.csv"
+    
+    if not os.path.exists(sample_file):
+        logger.info("📊 Création de l'échantillon de test...")
+        create_smart_sample(original_file, sample_file, n_samples=3000)
+    
+    # 2. Configuration ultra-rapide
+    test_config = {
+        "data": {"raw_data_path": sample_file, "processed_data_dir": "data/test_processed"},
+        "feature_engineering": {"selection_method": "importance", "max_features": 100},
+        "modeling": {"models": ["Random Forest"], "quick_training": True, "cv_folds": 2}
+    }
+    
+    # 3. Lancer le pipeline
+    try:
+        logger.info("🔄 Lancement du pipeline de test...")
+        from src import create_complete_pipeline
+        
+        start_time = time.time()
+        results = create_complete_pipeline(sample_file, test_config)
+        end_time = time.time()
+        
+        logger.info(f"\n✅ TEST TERMINÉ EN {end_time-start_time:.1f} SECONDES !")
+        logger.info("=" * 50)
+        
+        if results and 'final_performance' in results:
+            best_model = results['final_performance']['best_model']
+            metrics = results['final_performance']['best_metrics']
+            
+            logger.info(f"🏆 Modèle: {best_model}")
+            logger.info(f"📊 F1-Score: {metrics['f1_score']:.4f}")
+            logger.info(f"📊 Accuracy: {metrics['accuracy']:.4f}")
+            logger.info(f"📊 Precision: {metrics['precision']:.4f}")
+            logger.info(f"📊 Recall: {metrics['recall']:.4f}")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur: {e}")
+        return False
+
+
 if __name__ == '__main__':
     # Test du module
     print("🤖 Test du module de modélisation EEG")
+    
+    # Créer une configuration ultra-rapide
+    ultra_fast_config = {
+        "data": {
+            "raw_data_path": "data/raw/EEG_Scaled_data.csv",
+            "processed_data_dir": "data/processed_fast",
+            "target_column": None
+        },
+        "preprocessing": {
+            "test_size": 0.2,
+            "random_state": 42,
+            "handle_missing": "median",
+            "remove_constant_features": True,
+            "standardize": True
+        },
+        "feature_engineering": {
+            "selection_method": "importance",     # AU LIEU DE "combined"
+            "max_features": 300,                  # AU LIEU DE 2000
+            "apply_pca": False,
+            "pca_variance_threshold": 0.95
+        },
+        "modeling": {
+            "models": ["Random Forest"],          # UN SEUL MODÈLE
+            "handle_imbalance": True,
+            "cv_folds": 2,                        # AU LIEU DE 5
+            "scoring_metric": "f1",
+            "quick_training": True                # FORCE param_grid_quick
+        },
+        "output": {
+            "models_dir": "models_fast",
+            "results_dir": "results_fast",
+            "save_artifacts": True
+        }
+    }
+    
+    # Sauvegarder la config ultra-rapide
+    with open('config_ultra_fast.json', 'w') as f:
+        json.dump(ultra_fast_config, f, indent=2)
+    
+    print("✅ config_ultra_fast.json créé et prêt à utiliser")
     
     # Générer des données de test
     np.random.seed(42)
@@ -1040,10 +941,21 @@ if __name__ == '__main__':
     try:
         results = create_complete_modeling_pipeline(
             X_train_test, y_train_test, X_test_test, y_test_test,
-            model_names=['Random Forest', 'Logistic Regression'],
+            model_names=['Random Forest'],
             quick_training=True,
             output_dir='test_models'
         )
         print(f"✅ Pipeline testé - Meilleur modèle: {results['best_model']}")
     except Exception as e:
         print(f"❌ Erreur lors du test: {e}")
+    
+    print("\n" + "="*60)
+    print("🚀 COMMANDES POUR EXÉCUTION RAPIDE:")
+    print("="*60)
+    print("1️⃣ Échantillon test:")
+    print("   python -c \"import pandas as pd; df=pd.read_csv('data/raw/EEG_Scaled_data.csv', nrows=3000); df.to_csv('data/raw/sample_3k.csv', index=False); print('✅ Échantillon créé')\"")
+    print("\n2️⃣ Test rapide:")
+    print("   python main.py --data data/raw/sample_3k.csv --quick")
+    print("\n3️⃣ Pipeline complet optimisé:")
+    print("   python main.py --config config_ultra_fast.json")
+    print("="*60)

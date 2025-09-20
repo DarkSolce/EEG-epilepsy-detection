@@ -1,0 +1,34 @@
+{
+  "data": {
+    "raw_data_path": "data/raw/EEG_Scaled_data.csv",
+    "processed_data_dir": "data/processed_fast",
+    "target_column": null
+  },
+  "preprocessing": {
+    "test_size": 0.2,
+    "random_state": 42,
+    "handle_missing": "median",
+    "remove_constant_features": true,
+    "standardize": true
+  },
+  "feature_engineering": {
+    "selection_method": "importance",
+    "max_features": 300,
+    "apply_pca": false,
+    "pca_variance_threshold": 0.95
+  },
+  "modeling": {
+    "models": [
+      "Random Forest"
+    ],
+    "handle_imbalance": true,
+    "cv_folds": 2,
+    "scoring_metric": "f1",
+    "quick_training": true
+  },
+  "output": {
+    "models_dir": "models_fast",
+    "results_dir": "results_fast",
+    "save_artifacts": true
+  }
+}

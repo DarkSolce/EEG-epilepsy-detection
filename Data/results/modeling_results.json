@@ -1,0 +1,31 @@
+{
+  "best_model": "Gradient Boosting",
+  "best_threshold": 0.8899999999999996,
+  "final_results": {
+    "Gradient Boosting": {
+      "accuracy": 0.9314641744548287,
+      "precision": 0.6905444126074498,
+      "recall": 0.8397212543554007,
+      "f1": 0.7578616352201258,
+      "roc_auc": 0.9701397283652137
+    }
+  },
+  "optimization_results": {
+    "Gradient Boosting": {
+      "best_params": {
+        "subsample": 0.8,
+        "n_estimators": 200,
+        "max_features": 0.3,
+        "max_depth": 7,
+        "learning_rate": 0.1
+      },
+      "best_score": 0.8760155820206954
+    }
+  },
+  "dataset_info": {
+    "dataset_used": "combined",
+    "train_samples": 8817,
+    "test_samples": 2247,
+    "features": 1144
+  }
+}

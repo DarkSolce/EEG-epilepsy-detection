@@ -1,0 +1,25 @@
+# Byte-compiled / optimized
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter
+.ipynb_checkpoints
+
+# Environments
+venv/
+env/
+.venv/
+.env
+
+# Data
+data/raw/
+data/interim/
+data/processed/
+
+# Logs and reports
+logs/
+reports/figures/
+
+# Misc
+.DS_Store

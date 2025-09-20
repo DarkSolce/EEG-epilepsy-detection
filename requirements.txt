@@ -1,0 +1,199 @@
+# ==============================================================================
+# EEG EPILEPSY DETECTION - REQUIREMENTS
+# ==============================================================================
+# Pipeline ML pour la détection automatique de crises d'épilepsie
+# Compatible Python 3.8+ | Testé sur Ubuntu 20.04, Windows 10, macOS
+# Dernière mise à jour: Janvier 2025
+
+# ==============================================================================
+# CORE DATA SCIENCE STACK
+# ==============================================================================
+
+# Core computing
+numpy>=1.21.0,<2.0.0
+pandas>=1.3.0,<3.0.0
+scipy>=1.7.0,<2.0.0
+
+# Machine Learning
+scikit-learn>=1.2.0,<2.0.0
+imbalanced-learn>=0.10.0,<1.0.0
+
+# Preprocessing and feature selection
+joblib>=1.2.0,<2.0.0
+
+# ==============================================================================
+# VISUALIZATION AND ANALYSIS
+# ==============================================================================
+
+# Core plotting
+matplotlib>=3.5.0,<4.0.0
+seaborn>=0.11.0,<1.0.0
+
+# Enhanced plotting (optional but recommended)
+plotly>=5.10.0,<6.0.0
+
+# ==============================================================================
+# EEG SIGNAL PROCESSING (OPTIONAL - pour extensions futures)
+# ==============================================================================
+
+# EEG analysis toolkit (optionnel - décommentez si needed)
+# mne>=1.0.0,<2.0.0
+
+# Signal processing (optionnel - décommentez si needed)
+# pywavelets>=1.3.0,<2.0.0
+
+# ==============================================================================
+# MODEL INTERPRETABILITY
+# ==============================================================================
+
+# SHAP for model explanation
+shap>=0.41.0,<1.0.0
+
+# ==============================================================================
+# JUPYTER ECOSYSTEM
+# ==============================================================================
+
+# Jupyter notebooks
+jupyter>=1.0.0,<2.0.0
+notebook>=6.4.0,<8.0.0
+ipykernel>=6.15.0,<7.0.0
+ipywidgets>=7.7.0,<9.0.0
+
+# Jupyter extensions
+jupyterlab>=3.4.0,<5.0.0
+
+# ==============================================================================
+# DEVELOPMENT AND TESTING
+# ==============================================================================
+
+# Code formatting and linting
+black>=22.0.0,<24.0.0
+flake8>=5.0.0,<7.0.0
+isort>=5.10.0,<6.0.0
+
+# Testing
+pytest>=7.1.0,<8.0.0
+pytest-cov>=4.0.0,<5.0.0
+
+# ==============================================================================
+# UTILITIES AND HELPERS
+# ==============================================================================
+
+# Progress bars
+tqdm>=4.64.0,<5.0.0
+
+# Configuration management
+pyyaml>=6.0.0,<7.0.0
+
+# Logging enhancements
+colorlog>=6.6.0,<7.0.0
+
+# ==============================================================================
+# OPTIONAL ENHANCEMENTS
+# ==============================================================================
+
+# Advanced ML models (décommentez si besoin de modèles plus avancés)
+# xgboost>=1.6.0,<3.0.0
+# lightgbm>=3.3.0,<5.0.0
+# catboost>=1.1.0,<2.0.0
+
+# Deep Learning (décommentez si besoin de neural networks)
+# tensorflow>=2.9.0,<3.0.0
+# torch>=1.12.0,<3.0.0
+# torchvision>=0.13.0,<1.0.0
+
+# Hyperparameter optimization avancée
+# optuna>=3.0.0,<4.0.0
+# hyperopt>=0.2.7,<1.0.0
+
+# ==============================================================================
+# DEPLOYMENT AND PRODUCTION (OPTIONAL)
+# ==============================================================================
+
+# Web framework pour API (décommentez si besoin d'API web)
+# fastapi>=0.95.0,<1.0.0
+# uvicorn>=0.20.0,<1.0.0
+# pydantic>=1.10.0,<3.0.0
+
+# Monitoring et logging production
+# mlflow>=2.0.0,<3.0.0
+# wandb>=0.13.0,<1.0.0
+
+# ==============================================================================
+# SECURITY AND COMPLIANCE (MEDICAL DATA)
+# ==============================================================================
+
+# Cryptographie pour données médicales
+cryptography>=37.0.0,<42.0.0
+
+# ==============================================================================
+# SYSTEM REQUIREMENTS
+# ==============================================================================
+
+# Minimum Python version
+# python_requires = ">=3.8"
+
+# Recommended system specs:
+# - RAM: 8GB+ (16GB recommended for large datasets)
+# - CPU: 4+ cores (multiprocessing enabled)
+# - Storage: 5GB+ free space for models and results
+# - OS: Linux (Ubuntu 18.04+), Windows 10+, macOS 10.15+
+
+# ==============================================================================
+# INSTALLATION NOTES
+# ==============================================================================
+
+# Standard installation:
+# pip install -r requirements.txt
+
+# Development installation:
+# pip install -r requirements.txt
+# pip install -e .
+
+# For Conda users:
+# conda env create -f environment.yml  # (créer si besoin)
+# conda activate eeg-epilepsy
+
+# GPU support (si utilisation de deep learning):
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+# pip install tensorflow[and-cuda]
+
+# Apple Silicon (M1/M2) optimization:
+# conda install numpy scipy scikit-learn -c conda-forge
+# pip install --no-deps -r requirements.txt
+
+# ==============================================================================
+# TROUBLESHOOTING COMMON ISSUES
+# ==============================================================================
+
+# Issue: SHAP installation fails
+# Solution: pip install --upgrade setuptools wheel
+#           pip install shap --no-cache-dir
+
+# Issue: Matplotlib backend errors on Linux
+# Solution: sudo apt-get install python3-tk
+#           export MPLBACKEND=Agg (for headless systems)
+
+# Issue: Memory errors with large datasets
+# Solution: Increase swap space or use chunked processing
+#           Set PYTHONHASHSEED=0 for reproducibility
+
+# Issue: Permission errors on Windows
+# Solution: Run command prompt as Administrator
+#           Use --user flag: pip install --user -r requirements.txt
+
+# ==============================================================================
+# DOCKER SUPPORT (OPTIONAL)
+# ==============================================================================
+
+# Docker image disponible (à créer si besoin):
+# FROM python:3.9-slim
+# COPY requirements.txt .
+# RUN pip install -r requirements.txt
+# COPY . /app
+# WORKDIR /app
+# CMD ["python", "main.py", "--help"]
+
+# Usage:
+# docker build -t eeg-epilepsy .
+# docker run -v $(pwd)/data:/app/data eeg-epilepsy --data data/EEG_Scaled_data.csv --quick
